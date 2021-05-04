@@ -3,6 +3,7 @@ var redis = require("redis");
 var lexicon = require("emoji-lexicon");
 var lruMap = require("../services/lruMap");
 var cachedMap = require("../services/cachedMap");
+const QRCode = require('easyqrcodejs-nodejs');
 var host = process.env.REDIS_PORT_6379_TCP_ADDR;
 var port = process.env.REDIS_PORT_6379_TCP_PORT;
 
@@ -39,6 +40,15 @@ var getShortUrl = function (username, longUrl, callback) {
                 longUrl: longUrl,
                 username: username
             });
+            var options = {
+                text: 'http://localhost:3000/'+ shortUrl,
+                width: 600,
+                height: 600,
+            };
+            var qrcode = new QRCode(options);
+            qrcode.saveImage({
+                path: "public/views/qrcache/qr.png" // save path
+            });
         } else {
             UrlModel.findOne({username: username, longUrl: longUrl}, function (err, data) {
                 // if longUrl in db
@@ -56,6 +66,16 @@ var getShortUrl = function (username, longUrl, callback) {
                             username: username,
                             creationTime: new Date()
                         });
+                        console.log('http://localhost:3000/'+ shortUrl);
+                        var options = {
+                            text: 'http://localhost:3000/'+ shortUrl,
+                            width: 600,
+                            height: 600,
+                        };
+                        var qrcode = new QRCode(options);
+                        qrcode.saveImage({
+                            path: "public/views/qrcache/qr.png" // save path
+                        });
                         // save to db and redis
                         url.save();
                         redisClient.set(shortUrl, longUrl);
@@ -70,9 +90,13 @@ var getShortUrl = function (username, longUrl, callback) {
 
 // get emoji shortURL
 var generateShortUrl = function (callback) {
+    // if premium:
     callback(convertToEmoji());
+    // else:
+    // callback(convertToChar());
 
 };
+
 
 // randomly generate shortURL
 var convertToEmoji = function () {
@@ -81,11 +105,24 @@ var convertToEmoji = function () {
         for (var x = 0; x < 6; x++) {
             result += lexicon[Math.floor(Math.random() * lexicon.length)];
         }
-    } while (cachedMap.map.has(result)); // ???
+    } while (cachedMap.map.has(result)); 
 
     return result;
 
 };
+
+var convertToChar = function () {
+    do {
+        var result = "";
+        for (var x = 0; x < 6; x++) {
+            result += encode[Math.floor(Math.random() * encode.length)];
+        }
+    } while (cachedMap.map.has(result)); 
+
+    return result;
+
+};
+
 
 // get longURL from LRU or db
 var getLongUrl = function (shortUrl, callback) {
@@ -119,8 +156,11 @@ var getMyUrls = function (username, callback) {
     });
 };
 
+
+
 module.exports = {
     getShortUrl: getShortUrl,
     getLongUrl: getLongUrl,
     getMyUrls: getMyUrls
 };
+

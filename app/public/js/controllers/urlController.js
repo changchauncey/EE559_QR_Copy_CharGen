@@ -3,7 +3,6 @@ angular.module("tinyurlApp")
         function ($scope, $http, $routeParams) {
 
         var socket = io.connect();
-
         $http.get("/api/v1/urls/" + $routeParams.shortUrl)
             .success(function (data) {
                 $scope.longUrl = data.longUrl;
